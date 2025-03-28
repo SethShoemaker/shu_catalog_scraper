@@ -1,3 +1,4 @@
+import asyncio
 from typing import List
 import aiohttp
 from bs4 import BeautifulSoup
@@ -38,8 +39,12 @@ async def get_course_prefix_list() -> List[str]:
 def _search_url(course_prefix: str, page: int) -> str:
     return f"{_host}/search_advanced.php?cur_cat_oid=17&ecpage={page}&cpage=1&ppage=1&pcpage=1&spage=1&tpage=1&search_database=Search&filter%5Bkeyword%5D={course_prefix}&filter%5B3%5D=1&filter%5B31%5D=1"
 
+async def _process_course_page(show_url: str, courses: List[object]):
+    courses.append(await parse_course_page(show_url))
+
 async def get_courses_with_prefix(prefix: str) -> List[object]:
     courses = []
+    tasks = []
     page = 1
     while True:
         soup = await _get_soup(_search_url(prefix, page))
@@ -53,7 +58,9 @@ async def get_courses_with_prefix(prefix: str) -> List[object]:
         for result in results:
             if result is None:
                 continue
-            courses.append(await parse_course_page(f"{_host}/{result.attrs.get('href')}"))
+            tasks.append(_process_course_page(f"{_host}/{result.attrs.get('href')}", courses))
+        await asyncio.gather(*tasks)
+        tasks = []
         page+=1
 
 async def parse_course_page(show_url: str) -> object:
@@ -64,13 +71,15 @@ async def parse_course_page(show_url: str) -> object:
     credits = _get_credits(soup)
     when_offered = _get_when_offered(soup)
     prerequisites = _get_prerequisites(soup)
+    liberal_arts_cirriculum = _get_liberal_arts_cirriculum(soup)
     return {
         "link": show_url,
         "code": course_code,
         "name": course_name,
         "credits": credits,
         "when_offered": when_offered,
-        "prerequisites": prerequisites
+        "prerequisites": prerequisites,
+        "liberal_arts_cirriculum": liberal_arts_cirriculum
     }
 
 def _get_course_code(soup: BeautifulSoup) -> str|None:
@@ -106,3 +115,12 @@ def _get_when_offered(soup: BeautifulSoup) -> str|None:
 def _get_prerequisites(soup: BeautifulSoup) -> List[object]:
     links = soup.find_all(lambda tag: tag.name == 'a' and tag.attrs.get('href') and tag.attrs.get('href').startswith('preview_course_nopop.php?catoid='))
     return [{"code": link.text, "link":f"{_host}/{link.attrs.get('href')}"} for link in links]
+
+def _get_liberal_arts_cirriculum(soup: BeautifulSoup) -> str|None:
+    try:
+        raw = str(soup)
+        beg = raw.index('<strong>Liberal Arts Curriculum:</strong>') + 41
+        end = raw.index('<br/>', beg)
+        return raw[beg:end].strip().strip('.')
+    except ValueError:
+        return None
