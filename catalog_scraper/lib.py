@@ -2,6 +2,7 @@ import asyncio
 from typing import List
 import aiohttp
 from bs4 import BeautifulSoup
+from catalog_scraper import console
 
 _host = "https://catalog.setonhill.edu"
 
@@ -47,6 +48,7 @@ async def get_courses_with_prefix(prefix: str) -> List[object]:
     tasks = []
     page = 1
     while True:
+        console.log(f"[dim]on page {page}[/]")
         soup = await _get_soup(_search_url(prefix, page))
         results = (soup
             .find(lambda tag: tag.name == 'td' and 'Courses - Prefix/Code Matches' in tag)
@@ -70,6 +72,7 @@ async def parse_course_page(show_url: str) -> object:
     course_name = _get_course_name(soup)
     credits = _get_credits(soup)
     when_offered = _get_when_offered(soup)
+    prerequisites_text = _get_prerequisites_text(soup)
     prerequisites = _get_prerequisites(soup)
     liberal_arts_cirriculum = _get_liberal_arts_cirriculum(soup)
     return {
@@ -78,6 +81,7 @@ async def parse_course_page(show_url: str) -> object:
         "name": course_name,
         "credits": credits,
         "when_offered": when_offered,
+        "prerequisites_text": prerequisites_text,
         "prerequisites": prerequisites,
         "liberal_arts_cirriculum": liberal_arts_cirriculum
     }
@@ -115,6 +119,16 @@ def _get_when_offered(soup: BeautifulSoup) -> str|None:
 def _get_prerequisites(soup: BeautifulSoup) -> List[object]:
     links = soup.find_all(lambda tag: tag.name == 'a' and tag.attrs.get('href') and tag.attrs.get('href').startswith('preview_course_nopop.php?catoid='))
     return [{"code": link.text, "link":f"{_host}/{link.attrs.get('href')}"} for link in links]
+
+def _get_prerequisites_text(soup: BeautifulSoup) -> str|None:
+    try:
+        raw = str(soup)
+        beg = raw.index('<strong>Prerequisite(s):</strong>') + 33
+        end = raw.index('<br/>', beg)
+        resoup = BeautifulSoup(raw[beg:end], features="html.parser")
+        return resoup.text.replace(u'\xa0', '').strip().strip('.')
+    except ValueError:
+        return None
 
 def _get_liberal_arts_cirriculum(soup: BeautifulSoup) -> str|None:
     try:
