@@ -9,7 +9,7 @@
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 </head>
 
-<body>
+<body data-bs-theme="dark">
     <script>
         const courses = [
             {
@@ -29,47 +29,128 @@
             },
         ]
     </script>
-    <h1>SHU Catalog</h1>
-    <form onsubmit="event.preventDefault(); applySearch()">
-        <label for="code-search">Course Code</label>
-        <input type="text" name="code-search" id="code-search" class="form-control">
-        <label for="title-search">Title</label>
-        <input type="text" name="title-search" id="title-search" class="form-control">
-        <label for="credits-search">Credits</label>
-        <input type="text" name="credits-search" id="credits-search" class="form-control">
-        <label for="offered-search">Offered</label>
-        <input type="text" name="offered-search" id="offered-search" class="form-control">
-        <label for="prerequisite-search">Prerequisites</label>
-        <input type="text" name="prerequisite-search" id="prerequisite-search" class="form-control">
-        <label for="liberal-arts-search">Liberal Arts</label>
-        <input type="text" name="liberal-arts-search" id="liberal-arts-search" class="form-control">
-        <input type="submit" value="Search" class="btn btn-primary mt-4">
-    </form>
+    <h1 class="p-2">SHU Course Catalog</h1>
+    <div class="container row mb-4">
+        <div class="row">
+            <div class="col-5 mb-2">
+                <label for="code-search">Course Code</label>
+                <input type="text" name="code-search" id="code-search" class="form-control">
+            </div>
+            <div class="col-7 mb-2">
+                <label for="title-search">Title</label>
+                <input type="text" name="title-search" id="title-search" class="form-control">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-2 mb-2">
+                <label for="credits-search">Credits</label>
+                <input type="text" name="credits-search" id="credits-search" class="form-control">
+            </div>
+            <div class="col-2 mb-2">
+                <label for="offered-search">Offered</label>
+                <input type="text" name="offered-search" id="offered-search" class="form-control">
+            </div>
+            <div class="col-4 mb-2">
+                <label for="prerequisite-search">Prerequisites</label>
+                <input type="text" name="prerequisite-search" id="prerequisite-search" class="form-control">
+            </div>
+            <div class="col-4 mb-2">
+                <label for="liberal-arts-search">Liberal Arts</label>
+                <input type="text" name="liberal-arts-search" id="liberal-arts-search" class="form-control">
+            </div>
+        </div>
+    </div>
     <table class="table table-striped">
         <thead>
             <tr>
-                <th scope="col">Code</th>
-                <th scope="col">Title</th>
-                <th scope="col">Credits</th>
-                <th scope="col">When Offered</th>
-                <th scope="col">Prerequisites</th>
-                <th scope="col">Liberal Arts</th>
+                <th scope="col" style="width: 7%;">Code</th>
+                <th scope="col" style="width: 30%;">Title</th>
+                <th scope="col" style="width: 5%;">Credits</th>
+                <th scope="col" style="width: 12.5%;">Offered</th>
+                <th scope="col" style="width: 15.5%;">Prerequisites</th>
+                <th scope="col" style="width: 20%;">Liberal Arts</th>
             </tr>
         </thead>
         <tbody id="result-table-body"></tbody>
     </table>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/7.8.2/rxjs.umd.min.js"
+        integrity="sha512-9rY+ul/tDd5uFmYIG3Wf6sTYh44qwK7ZUcAejPR1RzZ4I09ubJBeOoMvLtIUjXWN5ZfR8WgZx9gwnZhMQ0ve9A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
+        const { fromEvent, combineLatest } = rxjs;
+        const { map, startWith, tap } = rxjs.operators;
 
         const codeSearch = document.getElementById('code-search')
+        const codeSearch$ = fromEvent(codeSearch, 'input').pipe(
+            map(event => event.target.value),
+            startWith(codeSearch.value)
+        );
         const titleSearch = document.getElementById('title-search')
+        const titleSearch$ = fromEvent(titleSearch, 'input').pipe(
+            map(event => event.target.value),
+            startWith(titleSearch.value)
+        );
         const creditsSearch = document.getElementById('credits-search')
+        const creditsSearch$ = fromEvent(creditsSearch, 'input').pipe(
+            map(event => event.target.value),
+            startWith(creditsSearch.value)
+        );
         const offeredSearch = document.getElementById('offered-search')
+        const offeredSearch$ = fromEvent(offeredSearch, 'input').pipe(
+            map(event => event.target.value),
+            startWith(offeredSearch.value)
+        );
         const prerequisiteSearch = document.getElementById('prerequisite-search')
+        const prerequisiteSearch$ = fromEvent(prerequisiteSearch, 'input').pipe(
+            map(event => event.target.value),
+            startWith(prerequisiteSearch.value)
+        );
         const liberalArtsSearch = document.getElementById('liberal-arts-search')
+        const liberalArtsSearch$ = fromEvent(liberalArtsSearch, 'input').pipe(
+            map(event => event.target.value),
+            startWith(liberalArtsSearch.value)
+        );
+
         const resultTableBody = document.getElementById('result-table-body')
 
-        function displayResults(results) {
-            const newChildren = results
+        combineLatest([
+            codeSearch$,
+            titleSearch$,
+            creditsSearch$,
+            offeredSearch$,
+            prerequisiteSearch$,
+            liberalArtsSearch$
+        ]).pipe(
+            map(arr => ({
+                codeSearch: arr[0],
+                titleSearch: arr[1],
+                creditsSearch: arr[2],
+                offeredSearch: arr[3],
+                prerequisiteSearch: arr[4],
+                liberalArtsSearch: arr[5],
+            })),
+            map(query => {
+                query.codeSearch = query.codeSearch.length == 0 ? null : query.codeSearch.toLowerCase();
+                query.titleSearch = query.titleSearch.length == 0 ? null : query.titleSearch.toLowerCase();
+                query.creditsSearch = query.creditsSearch.length == 0 ? null : query.creditsSearch.toLowerCase();
+                query.offeredSearch = query.offeredSearch.length == 0 ? null : query.offeredSearch.toLowerCase();
+                query.prerequisiteSearch = query.prerequisiteSearch.length == 0 ? null : query.prerequisiteSearch.toLowerCase();
+                query.liberalArtsSearch = query.liberalArtsSearch.length == 0 ? null : query.liberalArtsSearch.toLowerCase();
+                return query;
+            }),
+            tap(query => console.log(query)),
+            map(query => {
+                const results = courses
+                    .filter(c => query.codeSearch == null ? true : c.code != null && c.code.toLowerCase().indexOf(query.codeSearch) != -1)
+                    .filter(c => query.titleSearch == null ? true : c.name != null && c.name.toLowerCase().indexOf(query.titleSearch) != -1)
+                    .filter(c => query.creditsSearch == null ? true : c.credits != null && c.credits.toLowerCase().indexOf(query.creditsSearch) != -1)
+                    .filter(c => query.offeredSearch == null ? true : c.when_offered != null && c.when_offered.toLowerCase().indexOf(query.offeredSearch) != -1)
+                    .filter(c => query.prerequisiteSearch == null ? true : c.prerequisites_text != null && c.prerequisites_text.toLowerCase().indexOf(query.prerequisiteSearch) != -1)
+                    .filter(c => query.liberalArtsSearch == null ? true : c.liberal_arts_cirriculum != null && c.liberal_arts_cirriculum.toLowerCase().indexOf(query.liberalArtsSearch) != -1)
+                return results
+            }),
+            tap(results => console.log(results)),
+            map(results => results
                 .map(r => {
                     const tr = document.createElement('tr');
 
@@ -97,32 +178,9 @@
 
                     tr.append(codeTd, titleId, creditsTd, whenOfferedTd, prerequisitesTd, liberalArtsTd);
                     return tr;
-                })
-            resultTableBody.replaceChildren(...newChildren);
-        }
-
-        function displayNoResults() {
-            resultTableBody.replaceChildren(...[]);
-        }
-
-        function applySearch() {
-            const codeQuery = codeSearch.value.length == 0 ? null : codeSearch.value
-            const titleQuery = titleSearch.value.length == 0 ? null : titleSearch.value
-            const creditsQuery = creditsSearch.value.length == 0 ? null : creditsSearch.value
-            const offeredQuery = offeredSearch.value.length == 0 ? null : offeredSearch.value
-            const prerequisiteQuery = prerequisiteSearch.value.length == 0 ? null : prerequisiteSearch.value
-            const liberalArtsQuery = liberalArtsSearch.value.length == 0 ? null : liberalArtsSearch.value
-            const results = courses
-                .filter(c => codeQuery == null ? true : c.code != null && c.code.toLowerCase().indexOf(codeQuery.toLowerCase()) != -1)
-                .filter(c => titleQuery == null ? true : c.name != null && c.name.toLowerCase().indexOf(titleQuery.toLowerCase()) != -1)
-                .filter(c => creditsQuery == null ? true : c.credits != null && c.credits.toLowerCase().indexOf(creditsQuery.toLowerCase()) != -1)
-                .filter(c => offeredQuery == null ? true : c.when_offered != null && c.when_offered.toLowerCase().indexOf(offeredQuery.toLowerCase()) != -1)
-                .filter(c => prerequisiteQuery == null ? true : c.prerequisites_text != null && c.prerequisites_text.toLowerCase().indexOf(prerequisiteQuery.toLowerCase()) != -1)
-                .filter(c => liberalArtsQuery == null ? true : c.liberal_arts_cirriculum != null && c.liberal_arts_cirriculum.toLowerCase().indexOf(liberalArtsQuery.toLowerCase()) != -1)
-            results.length > 0 ? displayResults(results) : displayNoResults()
-        }
-
-        displayResults(courses)
+                })),
+            tap(rows => console.log(rows)),
+        ).subscribe(rows => resultTableBody.replaceChildren(...rows))
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
         integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
