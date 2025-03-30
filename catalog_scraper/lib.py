@@ -96,7 +96,11 @@ def _get_course_name(soup: BeautifulSoup) -> str|None:
     title = soup.find('h1', {'id': 'course_preview_title'})
     if title is None:
         return None
-    return title.text.split('-')[1].strip()
+    try:
+        i = title.text.index('-') + 1
+        return title.text[i:].replace(u'\xa0', '')
+    except ValueError:
+        return None
 
 def _get_credits(soup: BeautifulSoup) -> str|None:
     try:
