@@ -63,6 +63,20 @@
         </div>
         <div class="row mb-2">
             <div class="col-4 mb-2">
+                <label for="has-corequisites">Has Corequisites</label>
+                <select name="has-corequisites" id="has-corequisites" class="form-control">
+                    <option value="NULL">N/A</option>
+                    <option value="TRUE">Yes, has corequisites</option>
+                    <option value="FALSE">No, doesn't have corequisites</option>
+                </select>
+            </div>
+            <div class="col-8 mb-2">
+                <label for="corequisite-search">Corequisites Search</label>
+                <input type="text" name="corequisite-search" id="corequisite-search" class="form-control">
+            </div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-4 mb-2">
                 <label for="satisfies-liberal-arts">Satisfies Liberal Arts</label>
                 <select name="satisfies-liberal-arts" id="satisfies-liberal-arts" class="form-control">
                     <option value="NULL">N/A</option>
@@ -80,10 +94,11 @@
         <thead>
             <tr>
                 <th scope="col" style="width: 7%;">Code</th>
-                <th scope="col" style="width: 30%;">Title</th>
+                <th scope="col" style="width: 29%;">Title</th>
                 <th scope="col" style="width: 5%;">Credits</th>
                 <th scope="col" style="width: 12.5%;">Offered</th>
-                <th scope="col" style="width: 15.5%;">Prerequisites</th>
+                <th scope="col" style="width: 13.25%;">Prerequisites</th>
+                <th scope="col" style="width: 13.25%;">Corequisites</th>
                 <th scope="col" style="width: 20%;">Liberal Arts</th>
             </tr>
         </thead>
@@ -161,6 +176,18 @@
             startWith(prerequisiteSearch.value)
         );
 
+        const hasCorequisitesInput = document.getElementById('has-corequisites');
+        const hasCorequisitesInput$ = fromEvent(hasCorequisitesInput, 'input').pipe(
+            map(event => event.target.value),
+            startWith(hasCorequisitesInput.value)
+        );
+
+        const corequisiteSearch = document.getElementById('corequisite-search')
+        const corequisiteSearch$ = fromEvent(corequisiteSearch, 'input').pipe(
+            map(event => event.target.value),
+            startWith(corequisiteSearch.value)
+        );
+
         const satisfiesLiberalArtsInput = document.getElementById('satisfies-liberal-arts')
         const satisfiesLiberalArtsInput$ = fromEvent(satisfiesLiberalArtsInput, 'input').pipe(
             map(event => event.target.value),
@@ -183,6 +210,8 @@
             offeredSearch$,
             hasPrerequisitesInput$,
             prerequisiteSearch$,
+            hasCorequisitesInput$,
+            corequisiteSearch$,
             satisfiesLiberalArtsInput$,
             liberalArtsSearch$
         ]).pipe(
@@ -195,8 +224,10 @@
                 offeredSearch: arr[4],
                 hasPrerequisites: arr[5],
                 prerequisiteSearch: arr[6],
-                satisfiesLiberalArts: arr[7],
-                liberalArtsSearch: arr[8],
+                hasCorequisites: arr[7],
+                corequisiteSearch: arr[8],
+                satisfiesLiberalArts: arr[9],
+                liberalArtsSearch: arr[10],
             })),
             map(query => {
                 query.codeSearch = query.codeSearch.length == 0 ? null : query.codeSearch.toLowerCase();
@@ -206,6 +237,8 @@
                 query.offeredSearch = query.offeredSearch.length == 0 ? null : query.offeredSearch.toLowerCase();
                 query.hasPrerequisites = query.hasPrerequisites == "TRUE" ? true : query.hasPrerequisites == "FALSE" ? false : null;
                 query.prerequisiteSearch = query.hasPrerequisites ? (query.prerequisiteSearch.length == 0 ? null : query.prerequisiteSearch.toLowerCase()) : null;
+                query.hasCorequisites = query.hasCorequisites == "TRUE" ? true : query.hasCorequisites == "FALSE" ? false : null;
+                query.corequisiteSearch = query.hasPrerequisites ? (query.corequisiteSearch.length == 0 ? null : query.corequisiteSearch.toLowerCase()) : null;
                 query.satisfiesLiberalArts = query.satisfiesLiberalArts == "TRUE" ? true : query.satisfiesLiberalArts == "FALSE" ? false : null;
                 query.liberalArtsSearch = query.satisfiesLiberalArts ? (query.liberalArtsSearch.length == 0 ? null : query.liberalArtsSearch.toLowerCase()) : null
                 return query;
@@ -218,6 +251,8 @@
                 .filter(c => query.offeredSearch == null ? true : c.when_offered != null && c.when_offered.toLowerCase().indexOf(query.offeredSearch) != -1)
                 .filter(c => query.hasPrerequisites == null ? true : query.hasPrerequisites ? c.prerequisites_text != null : c.prerequisites_text == null)
                 .filter(c => query.prerequisiteSearch == null ? true : c.prerequisites_text != null && c.prerequisites_text.toLowerCase().indexOf(query.prerequisiteSearch) != -1)
+                .filter(c => query.hasCorequisites == null ? true : query.hasCorequisites ? c.corequisites_text != null : c.corequisites_text == null)
+                .filter(c => query.corequisiteSearch == null ? true : c.corequisites_text != null && c.corequisites_text.toLowerCase().indexOf(query.corequisiteSearch) != -1)
                 .filter(c => query.satisfiesLiberalArts == null ? true : query.satisfiesLiberalArts ? c.liberal_arts_cirriculum != null : c.liberal_arts_cirriculum == null)
                 .filter(c => query.liberalArtsSearch == null ? true : c.liberal_arts_cirriculum != null && c.liberal_arts_cirriculum.toLowerCase().indexOf(query.liberalArtsSearch) != -1)
             ),
@@ -244,10 +279,13 @@
                     const prerequisitesTd = document.createElement('td');
                     prerequisitesTd.textContent = r.prerequisites_text;
 
+                    const corequisitesTd = document.createElement('td');
+                    corequisitesTd.textContent = r.corequisites_text;
+
                     const liberalArtsTd = document.createElement('td');
                     liberalArtsTd.textContent = r.liberal_arts_cirriculum;
 
-                    tr.append(codeTd, titleId, creditsTd, whenOfferedTd, prerequisitesTd, liberalArtsTd);
+                    tr.append(codeTd, titleId, creditsTd, whenOfferedTd, prerequisitesTd, corequisitesTd, liberalArtsTd);
                     return tr;
                 })),
         ).subscribe(rows => resultTableBody.replaceChildren(...rows))
