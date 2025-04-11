@@ -74,6 +74,8 @@ async def parse_course_page(show_url: str) -> object:
     when_offered = _get_when_offered(soup)
     prerequisites_text = _get_prerequisites_text(soup)
     prerequisites = _get_prerequisites(soup)
+    corequisites_text = _get_corequisites_text(soup)
+    corequisites = _get_corequisites(soup)
     liberal_arts_cirriculum = _get_liberal_arts_cirriculum(soup)
     return {
         "link": show_url,
@@ -83,6 +85,8 @@ async def parse_course_page(show_url: str) -> object:
         "when_offered": when_offered,
         "prerequisites_text": prerequisites_text,
         "prerequisites": prerequisites,
+        "corequisites_text": corequisites_text,
+        "corequisites": corequisites,
         "liberal_arts_cirriculum": liberal_arts_cirriculum
     }
 
@@ -121,16 +125,44 @@ def _get_when_offered(soup: BeautifulSoup) -> str|None:
         return None
 
 def _get_prerequisites(soup: BeautifulSoup) -> List[object]:
-    links = soup.find_all(lambda tag: tag.name == 'a' and tag.attrs.get('href') and tag.attrs.get('href').startswith('preview_course_nopop.php?catoid='))
-    return [{"code": link.text, "link":f"{_host}/{link.attrs.get('href')}"} for link in links]
+    try:
+        raw = str(soup)
+        beg = raw.index('<strong>Prerequisite(s):</strong>') + 33
+        end = raw.index('<br/>', beg)
+        new_soup = BeautifulSoup(raw[beg:end], features="html.parser")
+        links = new_soup.find_all(lambda tag: tag.name == 'a' and tag.attrs.get('href') and tag.attrs.get('href').startswith('preview_course_nopop.php?catoid='))
+        return [{"code": link.text, "link":f"{_host}/{link.attrs.get('href')}"} for link in links]
+    except ValueError:
+        return []
 
 def _get_prerequisites_text(soup: BeautifulSoup) -> str|None:
     try:
         raw = str(soup)
         beg = raw.index('<strong>Prerequisite(s):</strong>') + 33
         end = raw.index('<br/>', beg)
-        resoup = BeautifulSoup(raw[beg:end], features="html.parser")
-        return resoup.text.replace(u'\xa0', '').strip().strip('.')
+        new_soup = BeautifulSoup(raw[beg:end], features="html.parser")
+        return new_soup.text.replace(u'\xa0', ' ').strip().strip('.').strip()
+    except ValueError:
+        return None
+
+def _get_corequisites(soup: BeautifulSoup) -> List[object]:
+    try:
+        raw = str(soup)
+        beg = raw.index('<strong>Corequisite(s):</strong>') + 32
+        end = raw.index('<br/>', beg)
+        new_soup = BeautifulSoup(raw[beg:end], features="html.parser")
+        links = new_soup.find_all(lambda tag: tag.name == 'a' and tag.attrs.get('href') and tag.attrs.get('href').startswith('preview_course_nopop.php?catoid='))
+        return [{"code": link.text, "link":f"{_host}/{link.attrs.get('href')}"} for link in links]
+    except ValueError:
+        return []
+
+def _get_corequisites_text(soup: BeautifulSoup) -> str|None:
+    try:
+        raw = str(soup)
+        beg = raw.index('<strong>Corequisite(s):</strong>') + 32
+        end = raw.index('<br/>', beg)
+        new_soup = BeautifulSoup(raw[beg:end], features="html.parser")
+        return new_soup.text.replace(u'\xa0', ' ').strip().strip('.').strip()
     except ValueError:
         return None
 
