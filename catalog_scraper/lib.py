@@ -140,7 +140,7 @@ def _get_prerequisites_text(soup: BeautifulSoup) -> str|None:
         raw = str(soup)
         beg = raw.index('<strong>Prerequisite(s):</strong>') + 33
         end = raw.index('<br/>', beg)
-        new_soup = BeautifulSoup(raw[beg:end], features="html.parser")
+        new_soup = BeautifulSoup(raw[beg:end].replace(u'<span style="display: none !important">\xa0</span>', ''), features="html.parser")
         return new_soup.text.replace(u'\xa0', ' ').strip().strip('.').strip()
     except ValueError:
         return None
